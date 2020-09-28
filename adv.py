@@ -34,31 +34,84 @@ player = Player(world.starting_room)
 
 
 
-def get_travel_order():
-    #* init travel log and memory
-    memory = dict()
-    travel_log = []
-    start_room = player.current_room.id
-        #? Room Stutus Codes (White = Unvisited), (Grey = Visted but Uncompleted), (Black = Completely Vistited)
-    memory[start_room] = ["Start", "Grey"] # [Descovered_by, Room_Status]
 
-    while_loop_fail_safe = 0
-    while memory[start_room][1] != "Black":
-        while_loop_fail_safe += 1
-        if (while_loop_fail_safe % 2000) == 0:
-            memory[start_room][1] = "Black"
-            print("You Failed")
-            
-    return travel_log
+memory = dict()
+travel_log = []
+start_loc = player.current_room.id
+memory[start_loc] = ["Start", "Gray"]
 
-traversal_path = get_travel_order()
+def get_connected():
+    global player
+    exits = player.current_room.get_exits()
+    exit_ids = [player.current_room.get_room_in_direction(direction).id for direction in player.current_room.get_exits()]
+    num_exits = len(exits)
+    return num_exits, exit_ids, exits
 
+num_exits, exit_ids, exits = get_connected()
+print(num_exits, exit_ids, exits)
 
+def travel(travel_log):
+    # if node 0 is not black then 
+    if memory[0][1] != "Black":
+        # then
+        print("Next Movement iteration")
+        # then check which nodes are connected to the current node
+        num_exits, exit_ids, exits = get_connected()
+        print(f"Currently in {player.current_room.id} connected to {exit_ids}")
+        # if any nodes are unexplored
+        unexplored = [node for node in exit_ids if node not in memory]
+        if len(unexplored) > 0:
+            print(f"unexplored nodes: {unexplored}")
+            # Then make the current node gray
+            memory[player.current_room.id][1] = "Gray"
+            print(f"set current node {player.current_room.id} to Gray")
+            # Get the first Unexplored node
+            next_node = unexplored[0]
+            # add the new node to memory using [node_leaving, White]
+            memory[next_node] = [player.current_room.id, "White"]
+            print(memory)
+            # travel to the first unexplored node in the list
+            for num in range(num_exits):
+                if exit_ids[num] == next_node:
+                    dir_next_node = exits[num]
+            print(f"traveling {dir_next_node} to {next_node}")
+            player.travel(dir_next_node)
+            print(f"now in {player.current_room.id}")
+            # append the direction be travled to the travel log
+            travel_log.append(dir_next_node)
+            print(travel_log)
+            # Recursion
+            return travel(travel_log)
+        # else
+        else:
+            print("No unexplored nodes here")
+            # Then Current node is marked black
+            memory[player.current_room.id][1] = "Black"
+            print(f"set current node {player.current_room.id} to Black")
+            if memory[0][1] != "Black":
+                # travel to this nodes parent node
+                next_node = memory[player.current_room.id][0]
+                for num in range(num_exits):
+                    if exit_ids[num] == next_node:
+                        dir_next_node = exits[num]
+                print(f"traveling {dir_next_node} to {next_node}")
+                player.travel(dir_next_node)
+                print(f"now in {player.current_room.id}")
+                # Append the direction of travel to list
+                travel_log.append(dir_next_node)
+                print(travel_log)
+                # Recursion
+                return travel(travel_log)
+            else:
+                # print(travel_log)
+                return travel_log
+    # Else
+    else:
+        # Return travel log
+        # print(travel_log)
+        return travel_log
 
-
-
-
-
+traversal_path = travel(travel_log)
 
 
 
